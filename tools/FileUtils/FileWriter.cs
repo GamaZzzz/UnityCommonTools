@@ -2,17 +2,17 @@
 using System.Collections;
 using UnityEngine;
 
-public abstract class FileWriter : IFileHandler
+public abstract class FileWriter
 {
     public bool IsCompleted { get; private set; }
-    public string Content { get; private set; }
+    public byte[] Content { get; private set; }
     public string FullFileName { get; private set; }
 
     public Action<FileWriter> OnWriteCompleted;
 
     private FileAsyncProcessor _loader;
 
-    public FileWriter(string content, string fullpath)
+    public FileWriter(byte[] content, string fullpath)
     {
         Content = content;
         FullFileName = fullpath;
@@ -21,19 +21,18 @@ public abstract class FileWriter : IFileHandler
 
     public void WriteAsync()
     {
+        DebugConsole.Info("Begin Wirete [" + FullFileName + "] !");
         IsCompleted = false;
-#if NONE_DONTUSE
+#if NONE
         FileUtils.WritePersistentFile(Content, FullFileName);
         OnCompleted();
         IsCompleted = true;
 #else
-        GameObject go = new GameObject(this.GetHashCode().ToString());
-        _loader = go.AddComponent<FileAsyncProcessor>();
-        _loader.LoadFile(this);
+        DoAsync();
 #endif
     }
 
-    public abstract IEnumerator DoAsync();
+    public abstract void DoAsync();
 
     protected virtual void OnCompleted()
     {

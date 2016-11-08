@@ -14,14 +14,14 @@ public class PersistentFileReader : FileReader
     public FileStream ReadStream { get; private set; }
     public byte[] ByteDatas { get; private set; }
 
-    public PersistentFileReader(string fullpath) : base(fullpath)
+    public PersistentFileReader(string sourcePath, string filePath) : base(sourcePath, filePath)
     {
 
     }
 
     public override IEnumerator DoAsync()
     {
-        ReadStream = File.OpenRead(this.FullFileName);
+        ReadStream = File.OpenRead(this.SourcePath + this.FilePath);
         ByteDatas = new byte[ReadStream.Length];
         ReadStream.BeginRead(ByteDatas, 0, (int)ReadStream.Length, new AsyncCallback(OnReadStreamCallback), this);
         yield break;     
@@ -37,7 +37,7 @@ public class PersistentFileReader : FileReader
             {
                 if (iar.IsCompleted)
                 {
-                    this.OnCompleted(Encoding.UTF8.GetString(pfr.ByteDatas));
+                    this.OnCompleted(Encoding.UTF8.GetString(pfr.ByteDatas), pfr.ByteDatas);
                 }
             }
         }

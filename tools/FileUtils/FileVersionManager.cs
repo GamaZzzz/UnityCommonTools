@@ -15,14 +15,19 @@ public class FileVersionManager
     /// Md5版本文件是否加载完毕
     /// </summary>
     public bool LoadMd5Completed { get; private set; }
+    public bool LoadMd5Success { get; private set; }
     /// <summary>
     /// 是否更新完毕
     /// </summary>
     public bool UpdateCompleted { get; private set; }
+    public bool UpdateSuccess { get; private set; }
+    public string PersistentBase { get; private set; }
     /// <summary>
     /// 持久化Md5版本文件
     /// </summary>
     public string PersistentMd5File { get; private set; }
+
+    public string SourceBase { get; private set; }
     /// <summary>
     /// 源Md5版本文件
     /// </summary>
@@ -45,8 +50,6 @@ public class FileVersionManager
 
     private object _progresslock = new object();
 
-    private string _persistentPath = Application.persistentDataPath + "\\";
-
     private List<FileMd5Data> _latestFiles = new List<FileMd5Data>();
 
     /// <summary>
@@ -54,10 +57,15 @@ public class FileVersionManager
     /// </summary>
     /// <param name="md5file">本地持久化Md5版本文件</param>
     /// <param name="updatesrc">更新源Md5版本文件路径</param>
-    public FileVersionManager(string localPersistentMd5File, string updateSourceMd5fileURL)
+    public FileVersionManager(string persistentBase, 
+        string localPersistentMd5File, 
+        string sourceBase,
+        string updateSourceMd5fileURL)
     {
+        PersistentBase = persistentBase;
         PersistentMd5File = localPersistentMd5File;
         SourceMd5FileURL = updateSourceMd5fileURL;
+        SourceBase = sourceBase;
         UpdateCompleted = false;
     }
 
@@ -68,23 +76,41 @@ public class FileVersionManager
     {
         LoadMd5Completed = false;
 
-        if (!File.Exists(PersistentMd5File))
+        if (!File.Exists(PersistentBase + PersistentMd5File))
         {
-            FileReader rd = FileReader.Create(SourceMd5FileURL, FileReader.FileType.REMOTE);
-            DebugConsole.Info("Load Remote: [" + rd.FullFileName + "] update faild!");
+            FileReader rd = FileReader.Create(SourceBase, SourceMd5FileURL, FileReader.FileType.REMOTE);
+            
             rd.OnReadCompleted = (reader) => {
-                GetModifiedFiles("", reader.TextData);
+                if (reader.Success)
+                {
+                   //DebugConsole.Info("Load Remote: [" + rd.FullFileName + "] success!");
+                    GetModifiedFiles("", reader.TextData);
+                }
+                else
+                {
+                    DebugConsole.Info("Load PERSISTENT: [" + rd.SourcePath + rd.FilePath + "] update faild!");
+                }
+                LoadMd5Success = reader.Success;
                 LoadMd5Completed = true;
             };
             rd.ReadAsync();
         }
         else
         {
-            FileReader rd = FileReader.Create(PersistentMd5File, FileReader.FileType.PERSISTENT);
-            DebugConsole.Info("Load PERSISTENT: [" + rd.FullFileName + "] update faild!");
+            FileReader rd = FileReader.Create(PersistentBase, PersistentMd5File, FileReader.FileType.PERSISTENT);
+           
             rd.OnReadCompleted = (reader) =>
             {
-                OnLoadCompleted(reader.TextData);
+                if (reader.Success)
+                {
+                    OnLoadCompleted(reader.TextData);
+                }
+                else
+                {
+                    DebugConsole.Info("Load PERSISTENT: [" + rd.SourcePath + rd.FilePath + "] update faild!");
+                    LoadMd5Success = reader.Success;
+                    LoadMd5Completed = true;
+                }
             };
             rd.ReadAsync();
         }
@@ -99,10 +125,11 @@ public class FileVersionManager
         {
             foreach (var md5filedata in _latestFiles)
             {
-                FileReader reader = FileReader.Create(sourcePath + md5filedata.FullPath, FileReader.FileType.REMOTE);
+                DebugConsole.Info("Begin update [" + md5filedata.FullPath + "] !");
+                FileReader reader = FileReader.Create(sourcePath , md5filedata.FullPath, FileReader.FileType.REMOTE);
                 reader.OnReadCompleted = (rd) =>
                 {
-                    FileWriter writer = new PersistentFileWriter(rd.TextData, _persistentPath + md5filedata.FullPath);
+                    FileWriter writer = new PersistentFileWriter(rd.ByteData, PersistentBase + rd.FilePath);
                     writer.OnWriteCompleted = OnWirteComplete;
                     writer.WriteAsync();
                 };
@@ -129,9 +156,9 @@ public class FileVersionManager
         else
         {
 #if UNITY_EDITOR
-            Debug.Log("File [" + writer.FullFileName + "] update faild!");
+            Debug.LogError("File [" + writer.FullFileName + "] update faild!");
 #else
-            DebugConsole.Info("File [" + writer.FullFileName + "] update faild!");
+            DebugConsole.Error("File [" + writer.FullFileName + "] update faild!");
 #endif
         }
     }
@@ -152,7 +179,12 @@ public class FileVersionManager
 
             if(_updatecount == ModifiedFiles)
             {
-                FileUtils.WritePersistentFile(_latestContent, PersistentMd5File);
+                UpdateSuccess = true;
+                FileUtils.WritePersistentFile(_latestContent, PersistentBase + PersistentMd5File);
+            }
+            else
+            {
+                UpdateSuccess = false;
             }
         }
     }
@@ -160,19 +192,23 @@ public class FileVersionManager
     void OnLoadCompleted(string data)
     {
         _localMd5 = FileUtils.GetMd5(data);
-        FileReader rd = FileReader.Create(SourceMd5FileURL, FileReader.FileType.REMOTE);
-        DebugConsole.Info("Load SourceMd5FileURL: [" + rd.FullFileName + "] update faild!");
+        FileReader rd = FileReader.Create(SourceBase, SourceMd5FileURL, FileReader.FileType.REMOTE);
+        //DebugConsole.Info("Load SourceMd5FileURL: [" + rd.FullFileName + "] update success!");
         rd.OnReadCompleted = (reader) => {
-            _targetMd5 = FileUtils.GetMd5(reader.TextData);
-            if(_localMd5 == _targetMd5)
+            if (reader.Success)
             {
+                _targetMd5 = FileUtils.GetMd5(reader.TextData);
+                if (_localMd5 == _targetMd5)
+                {
 #if UNITY_EDITOR
-                Debug.Log("Md5File:" + PersistentMd5File + " Don't need to update!");
+                    Debug.Log("Md5File:" + PersistentBase + PersistentMd5File + " Don't need to update!");
 #else
                 DebugConsole.Info("Md5File:" + PersistentMd5File + "Don't need to update!");
 #endif
+                }
+                GetModifiedFiles(data, reader.TextData);
             }
-            GetModifiedFiles(data, reader.TextData);
+            LoadMd5Success = reader.Success;
             LoadMd5Completed = true;
         };
         rd.ReadAsync();

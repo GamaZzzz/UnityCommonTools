@@ -10,16 +10,18 @@ public abstract class BaseDictionary<TKey, TValue>
     public bool Success { get; private set; }
     protected Dictionary<TKey, TValue> _dictrionary;
     protected abstract string Path { get; }
+    protected abstract string BasePath { get; }
 
     public void LoadAsync()
     {
-        FileReader reader = FileReader.Create(Path, FileReader.FileType.CSVFILE);
+        FileReader reader = FileReader.Create(BasePath, Path, FileReader.FileType.CSVFILE);
         reader.OnReadCompleted = (ret) => {
             Loaded = true;
             if (ret.Success)
             {
                 ParseLine(((CSVFileReader)ret).Lines);
             }
+            Success = ret.Success;
         };
         reader.ReadAsync();
     }

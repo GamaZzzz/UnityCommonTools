@@ -10,24 +10,24 @@ using UnityEngine;
 /// </summary>
 public class RemoteFileReader : FileReader
 {
-    public RemoteFileReader(string fullpath) : base(fullpath)
-    {
+    public RemoteFileReader(string sourcePath, string filePath) : base(sourcePath, filePath)
+    { 
         
     }
 
     public override IEnumerator DoAsync()
     {
-        using (WWW www = new WWW(FullFileName))
+        using (WWW www = new WWW(SourcePath + FilePath))
         {
             yield return www;
 
             if (www.isDone && string.IsNullOrEmpty(www.error))
             {
-                OnCompleted(www.text);
+                DebugConsole.Info("Bytes:" + www.bytesDownloaded);
+                OnCompleted(www.text, www.bytes);
             }
             else
             {
-                DebugConsole.Error(www.error);
                 OnError(www.error);
             }
         }

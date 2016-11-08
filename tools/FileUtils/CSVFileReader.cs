@@ -12,12 +12,12 @@ public class CSVFileReader : FileReader
 {
     public List<string[]> Lines;
 
-    public CSVFileReader(string path) : base(path)
+    public CSVFileReader(string sourcePath, string filePath) : base(sourcePath, filePath)
     {
 
     }
 
-    protected override void OnCompleted(string data)
+    protected override void OnCompleted(string data, byte[] bytes)
     {
         using(StringReader reader = new StringReader(data))
         {
@@ -29,7 +29,7 @@ public class CSVFileReader : FileReader
                 line = reader.ReadLine();
             }
         }
-        base.OnCompleted(data);
+        base.OnCompleted(data, bytes);
     }
 
     protected override void OnError(string error)
@@ -39,13 +39,13 @@ public class CSVFileReader : FileReader
 
     public override IEnumerator DoAsync()
     {
-        using (WWW www = new WWW(FullFileName))
+        using (WWW www = new WWW(SourcePath + FilePath))
         {
             yield return www;
 
             if (www.isDone && string.IsNullOrEmpty(www.error))
             {
-                OnCompleted(www.text);
+                OnCompleted(www.text, www.bytes);
             }
             else
             {

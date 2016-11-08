@@ -40,6 +40,11 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System;
+using System.Text;
+using System.Reflection;
+using System.Linq;
 
 public class DebugConsole : MonoBehaviour
 {
@@ -47,9 +52,10 @@ public class DebugConsole : MonoBehaviour
     #region USE_DEBUGCONSOLE
     public enum ConsoleType
     {
-        INFO = 1,
-        ERROR = 2,
-        WARNING = 3
+        NONE = 0,
+        INFO = 3,
+        WARNING = 2,
+        ERROR = 1
     }
 
     public struct ConsoleMessage
@@ -111,8 +117,9 @@ public class DebugConsole : MonoBehaviour
  
         }
     }
- 
- 
+
+    public static ConsoleType Level = ConsoleType.INFO;
+
     private static DebugConsole s_Instance = null;   // Our instance to allow this script to be called without a direct connection.
     public static DebugConsole instance
     {
@@ -145,6 +152,9 @@ public class DebugConsole : MonoBehaviour
  
     protected bool guisCreated = false;
     protected float screenHeight =-1;
+
+    private bool _needUpdate = false;
+
     public void InitGuis()
     {
     	float usedLineSpacing = lineSpacing;
@@ -233,7 +243,12 @@ public class DebugConsole : MonoBehaviour
                 DebugGui.transform.position = new Vector3(posX, posY, 0F);
             }
         }
- 
+
+        if (_needUpdate)
+        {
+            Display();
+            _needUpdate = false;
+        }
     }
     //++++ OVERLOAD ++++
     public static void Info(string message)
@@ -248,7 +263,16 @@ public class DebugConsole : MonoBehaviour
  
     public static void Error(string message)
     {
+        StackTrace st = new StackTrace();
         DebugConsole.instance.AddMessage(message, ConsoleType.ERROR);
+        
+        for (int i = 1; i< st.FrameCount; i++)
+        {
+            StringBuilder sb = new StringBuilder();
+            StackFrame sf = st.GetFrame(i);
+            sb.AppendFormat("at {0}.{1}", sf.GetMethod().DeclaringType.FullName, sf.GetMethod().IsConstructor ? sf.GetMethod().DeclaringType.Name : sf.GetMethod().Name);
+            DebugConsole.instance.AddMessage(sb.ToString(), ConsoleType.NONE);
+        }
     }
 
     public static void Clear()
@@ -262,20 +286,14 @@ public class DebugConsole : MonoBehaviour
     //Adds a mesage to the list
     //--------------------------------------------------------------
  
-    public void AddMessage(string message, ConsoleType type)
+    public void AddMessage(string message, ConsoleType type = ConsoleType.INFO)
     {
-        messages.Add(new ConsoleMessage(type, message));
-        Display();
+        if(Level >= type)
+        {
+            messages.Add(new ConsoleMessage(type, message));
+            _needUpdate = true;
+        }
     }
-    //++++++++++ OVERLOAD for AddMessage ++++++++++++++++++++++++++++
-    // Overloads AddMessage to only require one argument(message)
-    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    public void AddMessage(string message)
-    {
-        messages.Add(new ConsoleMessage(ConsoleType.INFO, message));
-        Display();
-    }
- 
  
     //----------- void ClearMessages() ------------------------------
     // Clears the messages from the screen and the lists
@@ -367,23 +385,39 @@ public class DebugConsole : MonoBehaviour
                     {
                         case ConsoleType.INFO:
                             {
-                                gui.GetComponent<GUIText>().material.color = normal;
-                                //now set the text for this element
-                                gui.GetComponent<GUIText>().text ="INFO:" + messages[x].Message;
+                                if(((int)Level) >= ((int)ConsoleType.INFO))
+                                {
+                                    gui.GetComponent<GUIText>().material.color = normal;
+                                    //now set the text for this element
+                                    gui.GetComponent<GUIText>().text = "INFO:" + messages[x].Message;
+                                }
                                 break;
                             }
                         case ConsoleType.WARNING:
                             {
-                                gui.GetComponent<GUIText>().material.color = warning;
-                                //now set the text for this element
-                                gui.GetComponent<GUIText>().text = "WARNING:" + messages[x].Message;
+                                if (((int)Level) >= ((int)ConsoleType.WARNING))
+                                {
+                                    gui.GetComponent<GUIText>().material.color = warning;
+                                    //now set the text for this element
+                                    gui.GetComponent<GUIText>().text = "WARNING:" + messages[x].Message;
+                                }
                                 break;
                             }
                         case ConsoleType.ERROR:
                             {
+                                if ((int)Level >= (int)ConsoleType.ERROR)
+                                {
+                                    gui.GetComponent<GUIText>().material.color = error;
+                                    //now set the text for this element
+                                    gui.GetComponent<GUIText>().text = "ERROR:" + messages[x].Message;
+                                }
+                                break;
+                            }
+                        case ConsoleType.NONE:
+                            {
                                 gui.GetComponent<GUIText>().material.color = error;
                                 //now set the text for this element
-                                gui.GetComponent<GUIText>().text = "ERROR:" + messages[x].Message;
+                                gui.GetComponent<GUIText>().text = messages[x].Message;
                                 break;
                             }
                     }

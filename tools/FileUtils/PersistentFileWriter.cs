@@ -9,21 +9,25 @@ using UnityEngine;
 public class PersistentFileWriter : FileWriter
 {
     public FileStream WriteStream { get; private set; }
-    public byte[] WriteBytes { get; private set; }
 
-    public PersistentFileWriter(string content, string fullpath) : base(content, fullpath)
+    public PersistentFileWriter(string content, string fullpath) : base(Encoding.UTF8.GetBytes(content), fullpath)
     {
-        WriteBytes = Encoding.UTF8.GetBytes(content);
+
     }
 
-    public override IEnumerator DoAsync()
+    public PersistentFileWriter(byte[] content, string fullpath) : base(content, fullpath)
+    {
+
+    }
+
+    public override void  DoAsync()
     {
         if (!File.Exists(FullFileName))
         {
             DirectoryInfo di = new DirectoryInfo(FullFileName);
             if (!di.Parent.Exists)
             {
-                di.Parent.Create();
+                CreateDir(di.Parent);
 #if UNITY_EDITOR
                 Debug.Log("Create Dir:" + di.Parent.FullName);
 #else
@@ -38,9 +42,26 @@ public class PersistentFileWriter : FileWriter
         }
 
         WriteStream = File.OpenWrite(FullFileName);
-        WriteStream.BeginWrite(WriteBytes, 0, WriteBytes.Length, new AsyncCallback(On_Write_Callback), this);
+        WriteStream.SetLength(0);
+        WriteStream.BeginWrite(Content, 0, Content.Length, new AsyncCallback(On_Write_Callback), this);
+    }
 
-        yield break;
+    void CreateDir(DirectoryInfo dirInfo)
+    {
+        if (!dirInfo.Parent.Exists)
+        {
+            CreateDir(dirInfo.Parent);
+        }
+        else
+        {
+#if UNITY_EDITOR
+            Debug.Log("Create Dir:" + dirInfo.FullName);
+#else
+                        DebugConsole.Info("Create Dir:" + dirInfo.FullName);
+#endif
+            //dirInfo.Create();
+            Directory.CreateDirectory(dirInfo.FullName);
+        }
     }
 
     void On_Write_Callback(IAsyncResult iar)
@@ -51,6 +72,7 @@ public class PersistentFileWriter : FileWriter
             pfw.WriteStream.EndWrite(iar);
             if (iar.IsCompleted)
             {
+                pfw.WriteStream.Flush();
                 this.OnCompleted();
             }
         }

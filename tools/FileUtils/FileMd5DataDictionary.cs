@@ -16,6 +16,14 @@ public class FileMd5DataDictionary : BaseDictionary<string, FileMd5Data>
         }
     }
 
+    protected override string BasePath
+    {
+        get
+        {
+            return "";
+        }
+    }
+
     protected override void ParseLine(List<string[]> datas)
     {
         _dictrionary = new Dictionary<string, FileMd5Data>();
