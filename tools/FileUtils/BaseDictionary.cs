@@ -14,7 +14,7 @@ public abstract class BaseDictionary<TKey, TValue>
 
     public void LoadAsync()
     {
-        FileReader reader = FileReader.Create(BasePath, Path, FileReader.FileType.CSVFILE);
+        FileReader reader = FileReader.CreateReader(BasePath, Path, FileReader.FileType.CSVFILE);
         reader.OnReadCompleted = (ret) => {
             Loaded = true;
             if (ret.Success)
@@ -27,6 +27,11 @@ public abstract class BaseDictionary<TKey, TValue>
     }
 
     protected abstract void ParseLine(List<string[]> datas);
+
+    public bool ContainsKey(TKey key)
+    {
+        return _dictrionary.ContainsKey(key);
+    }
 
     public TValue Get(TKey key)
     {

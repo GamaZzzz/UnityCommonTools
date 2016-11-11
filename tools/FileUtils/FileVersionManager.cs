@@ -21,12 +21,17 @@ public class FileVersionManager
     /// </summary>
     public bool UpdateCompleted { get; private set; }
     public bool UpdateSuccess { get; private set; }
+    /// <summary>
+    /// 持久化目录
+    /// </summary>
     public string PersistentBase { get; private set; }
     /// <summary>
     /// 持久化Md5版本文件
     /// </summary>
     public string PersistentMd5File { get; private set; }
-
+    /// <summary>
+    /// 更新源文件基础URL
+    /// </summary>
     public string SourceBase { get; private set; }
     /// <summary>
     /// 源Md5版本文件
@@ -47,10 +52,12 @@ public class FileVersionManager
 
     private int _updatecount = 0;
     private int _processcount = 0;
+    private int _deletedcount = 0;
 
     private object _progresslock = new object();
 
     private List<FileMd5Data> _latestFiles = new List<FileMd5Data>();
+    private List<FileMd5Data> _deletedFiles = new List<FileMd5Data>();
 
     /// <summary>
     /// 文件版本管理器
@@ -74,11 +81,11 @@ public class FileVersionManager
     /// </summary>
     public void LoadMd5VersionFile()
     {
-        LoadMd5Completed = false;
+        Init();
 
         if (!File.Exists(PersistentBase + PersistentMd5File))
         {
-            FileReader rd = FileReader.Create(SourceBase, SourceMd5FileURL, FileReader.FileType.REMOTE);
+            FileReader rd = FileReader.CreateReader(SourceBase, SourceMd5FileURL, FileReader.FileType.REMOTE);
             
             rd.OnReadCompleted = (reader) => {
                 if (reader.Success)
@@ -97,7 +104,7 @@ public class FileVersionManager
         }
         else
         {
-            FileReader rd = FileReader.Create(PersistentBase, PersistentMd5File, FileReader.FileType.PERSISTENT);
+            FileReader rd = FileReader.CreateReader(PersistentBase, PersistentMd5File, FileReader.FileType.PERSISTENT);
            
             rd.OnReadCompleted = (reader) =>
             {
@@ -121,12 +128,24 @@ public class FileVersionManager
     /// </summary>
     public void UpdatePersistentFilesAsync(string sourcePath)
     {
+        if (_deletedcount > 0)
+        {
+            //先删除已经丢弃的文件
+            foreach(var item in _deletedFiles)
+            {
+                if(File.Exists(PersistentBase + item.FullPath))
+                {
+                    File.Delete(PersistentBase + item.FullPath);
+                }
+            }
+        }
+
         if(ModifiedFiles > 0)
         {
             foreach (var md5filedata in _latestFiles)
             {
                 DebugConsole.Info("Begin update [" + md5filedata.FullPath + "] !");
-                FileReader reader = FileReader.Create(sourcePath , md5filedata.FullPath, FileReader.FileType.REMOTE);
+                FileReader reader = FileReader.CreateReader(sourcePath , md5filedata.FullPath, FileReader.FileType.REMOTE);
                 reader.OnReadCompleted = (rd) =>
                 {
                     FileWriter writer = new PersistentFileWriter(rd.ByteData, PersistentBase + rd.FilePath);
@@ -192,7 +211,7 @@ public class FileVersionManager
     void OnLoadCompleted(string data)
     {
         _localMd5 = FileUtils.GetMd5(data);
-        FileReader rd = FileReader.Create(SourceBase, SourceMd5FileURL, FileReader.FileType.REMOTE);
+        FileReader rd = FileReader.CreateReader(SourceBase, SourceMd5FileURL, FileReader.FileType.REMOTE);
         //DebugConsole.Info("Load SourceMd5FileURL: [" + rd.FullFileName + "] update success!");
         rd.OnReadCompleted = (reader) => {
             if (reader.Success)
@@ -214,11 +233,25 @@ public class FileVersionManager
         rd.ReadAsync();
     }
 
+    void Init()
+    {
+        ModifiedFiles = 0;
+        _updatecount = 0;
+        _processcount = 0;
+        _deletedcount = 0;
+        _latestFiles.Clear();
+        _deletedFiles.Clear();
+        LoadMd5Completed = false;
+        LoadMd5Success = false;
+        UpdateCompleted = false;
+        UpdateSuccess = false;
+        Progress = 0f;
+    }
+
     void GetModifiedFiles(string md5filecontent, string newVerMd5filecontent)
     {
         _latestContent = newVerMd5filecontent;//缓存最新版Md5文件
-        ModifiedFiles = 0;
-        _latestFiles.Clear();
+
         FileMd5DataDictionary newMd5DataDictionary = new FileMd5DataDictionary();
         newMd5DataDictionary.Parse(newVerMd5filecontent);
 
@@ -226,13 +259,23 @@ public class FileVersionManager
         {
             FileMd5DataDictionary curMd5DataDictionary = new FileMd5DataDictionary();
             curMd5DataDictionary.Parse(md5filecontent);
-            foreach(var newVer in newMd5DataDictionary.GetAllValues())
+            List<FileMd5Data> tempNewVers = newMd5DataDictionary.GetAllValues();
+            foreach (var newVer in tempNewVers)
             {
                 var oldVer = curMd5DataDictionary.Get(newVer.FileName);
                 if(oldVer == null || oldVer.Md5Code != newVer.Md5Code)
                 {
                     _latestFiles.Add(newVer);
                     ModifiedFiles++;
+                }
+            }
+            List<FileMd5Data> temp = curMd5DataDictionary.GetAllValues();
+            foreach (var item in temp)
+            {
+                if (!newMd5DataDictionary.ContainsKey(item.FileName))
+                {
+                    _deletedFiles.Add(item);
+                    _deletedcount++;
                 }
             }
         }

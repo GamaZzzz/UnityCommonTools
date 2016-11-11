@@ -41,10 +41,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System;
 using System.Text;
-using System.Reflection;
-using System.Linq;
 
 public class DebugConsole : MonoBehaviour
 {
@@ -147,7 +144,6 @@ public class DebugConsole : MonoBehaviour
     {
         s_Instance = this;
         InitGuis();
- 
     }
  
     protected bool guisCreated = false;
