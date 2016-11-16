@@ -4,7 +4,6 @@ using System.Collections;
 using UnityEditor;
 using System.IO;
 using System.Collections.Generic;
-using com.xuanyuan;
 using System.Threading;
 using UnityEditor.Sprites;
 

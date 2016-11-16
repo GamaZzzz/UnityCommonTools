@@ -36,7 +36,7 @@ public class SceneLoader : MonoBehaviour
 #if (UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
         this.LoadSceneAsync(Application.loadedLevel + 1, additive);
 #else
-        this.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex + 1, additive);
+        this.LoadSceneAsync(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex + 1, additive);
 #endif
     }
 
@@ -47,9 +47,9 @@ public class SceneLoader : MonoBehaviour
             this.LoadSceneAsync(Application.loadedLevel - 1, additive);
         } 
 #else
-        if (SceneManager.GetActiveScene().buildIndex > 0)
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex > 0)
         {
-            this.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex - 1, additive);
+            this.LoadSceneAsync(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex - 1, additive);
         }
 #endif
     }
@@ -83,7 +83,7 @@ public class SceneLoader : MonoBehaviour
 #if (UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
         AsyncOperation oper = additive ?  Application.LoadLevelAdditiveAsync(level) : Application.LoadLevelAsync(level);
 #else
-        AsyncOperation oper = SceneManager.LoadSceneAsync(level, additive ? LoadSceneMode.Additive : LoadSceneMode.Single);
+        AsyncOperation oper = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(level, additive ? LoadSceneMode.Additive : LoadSceneMode.Single);
 #endif
 
         OnProgress.Dispatch(oper.progress);
@@ -107,7 +107,7 @@ public class SceneLoader : MonoBehaviour
 #if (UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
         AsyncOperation oper = additive ?  Application.LoadLevelAdditiveAsync(level) : Application.LoadLevelAsync(level);
 #else
-        AsyncOperation oper = SceneManager.LoadSceneAsync(level, additive ? LoadSceneMode.Additive : LoadSceneMode.Single);
+        AsyncOperation oper = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(level, additive ? LoadSceneMode.Additive : LoadSceneMode.Single);
 #endif
         OnProgress.Dispatch(oper.progress);
 
