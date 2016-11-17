@@ -17,11 +17,11 @@ public class SceneLoader : MonoBehaviour
         }
     }
 
-    private LoadingScreen loadingScreen;
+    private ALoadingScreen loadingScreen;
 
     void Awake()
     {
-        loadingScreen = GetComponentInChildren<LoadingScreen>();
+        loadingScreen = GetComponentInChildren<ALoadingScreen>();
         _instance = this;
         DontDestroyOnLoad(this);
         //loadingScreen.Hide();

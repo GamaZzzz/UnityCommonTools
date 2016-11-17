@@ -17,6 +17,7 @@ public class PathParticle : MonoBehaviour
         {
             Queue<FrameDate> frames;
             float distance = ParticleUtils.CalculateDirection(new List<Transform>(wayPoints), out frames);
+            Particle.transform.position = wayPoints[0].transform.position;
             AnimationCurve curve_X;
             AnimationCurve curve_Y;
             AnimationCurve curve_Z;

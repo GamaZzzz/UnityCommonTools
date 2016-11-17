@@ -100,7 +100,6 @@ public class ParticlePathCurveMaker : EditorWindow
     void OnGUI()
     {
         EditorGUILayout.Space();
-        //ProgressBar(0.5f, "Test");
         EditorGUILayout.BeginVertical();
         Rect rect = GUILayoutUtility.GetRect(500f, 23f);
         psystem = EditorGUI.ObjectField(rect, "ParticleSystem:", psystem, typeof(ParticleSystem), true) as ParticleSystem;
@@ -171,7 +170,6 @@ public class ParticlePathCurveMaker : EditorWindow
         this.Repaint();
     }
 
-    // Custom GUILayout progress bar.
     void ProgressBar(float value, string label)
     {
         // Get a rect for the progress bar using the same margins as a textfield:
@@ -237,6 +235,7 @@ public class ParticlePathCurveMaker : EditorWindow
             if (i == 0)
             {
                 psystem.transform.position = pathnodes[i].Node.position;
+                psystem.transform.eulerAngles = Vector3.zero;
             }
             if (pathnodes[i].Node)
             {
