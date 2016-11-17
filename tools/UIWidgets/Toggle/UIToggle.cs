@@ -36,5 +36,19 @@ public class UIToggle : Widget
             original.isOn = value;
         }
     }
+
+
+#if UNITY_EDITOR
+    protected override void Reset()
+    {
+        base.Reset();
+        original = GetComponent<Toggle>();
+    }
+
+    protected override void OnValidate()
+    {
+
+    }
+#endif
 }
 
