@@ -54,6 +54,11 @@ public class SceneLoader : MonoBehaviour
 #endif
     }
 
+    /// <summary>
+    /// 异步加载场景
+    /// </summary>
+    /// <param name="scenename"></param>
+    /// <param name="additive"></param>
     public void LoadSceneAsync(string scenename, bool additive = false)
     {
         StartCoroutine(WaitForLoadLevel(scenename, additive));
@@ -95,6 +100,8 @@ public class SceneLoader : MonoBehaviour
             loadingScreen.OnProgress(oper.progress);
         }
 
+        Resources.UnloadUnusedAssets();
+
         OnLoadEnd.Dispatch();
         loadingScreen.Hide();
     }
@@ -119,6 +126,8 @@ public class SceneLoader : MonoBehaviour
         }
 
         yield return new WaitForSeconds(1f);
+
+        Resources.UnloadUnusedAssets();
 
         OnLoadEnd.Dispatch();
         loadingScreen.Hide();

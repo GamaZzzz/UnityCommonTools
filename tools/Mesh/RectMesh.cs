@@ -2,8 +2,6 @@
 
 using DG.Tweening;
 
-
-
 public class RectMesh : PrimitiveBase
 
 {

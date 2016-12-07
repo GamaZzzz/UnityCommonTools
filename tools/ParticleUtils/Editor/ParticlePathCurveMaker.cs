@@ -22,34 +22,34 @@ public class ParticlePathCurveMaker : EditorWindow
         public GameObject Tip;
         public void ShowTip()
         {
-            if (Tip)
-            {
-                Tip.transform.parent = Node;
-                Tip.transform.ResetLocal();
-                TextMesh textMesh = Tip.GetComponent<TextMesh>();
-                textMesh.text = "Node " + Index;
-                Collider collider = Node.GetComponent<Collider>();
-                if (collider)
-                {
-                    float h = collider.bounds.size.y;
-                    Vector3 temp = Tip.transform.position;
-                    temp.y += h;
-                    Tip.transform.position = temp;
-                }
-            }
-            else
-            {
-                GameObject tip = new GameObject("Node_" + Index);
-                tip.AddComponent<MeshRenderer>();
-                TextMesh textMesh = tip.AddComponent<TextMesh>();
-                textMesh.text = "Node " + Index;
-                textMesh.anchor = TextAnchor.MiddleCenter;
-                textMesh.color = Color.green;
-                textMesh.fontSize = 10;
-                Tip = tip;
-                tip.transform.parent = Node;
-                tip.transform.ResetLocal();
-            }
+            //if (Tip)
+            //{
+            //    Tip.transform.parent = Node;
+            //    Tip.transform.ResetLocal();
+            //    TextMesh textMesh = Tip.GetComponent<TextMesh>();
+            //    textMesh.text = "Node " + Index;
+            //    Collider collider = Node.GetComponent<Collider>();
+            //    if (collider)
+            //    {
+            //        float h = collider.bounds.size.y;
+            //        Vector3 temp = Tip.transform.position;
+            //        temp.y += h;
+            //        Tip.transform.position = temp;
+            //    }
+            //}
+            //else
+            //{
+            //    GameObject tip = new GameObject("Node_" + Index);
+            //    tip.AddComponent<MeshRenderer>();
+            //    TextMesh textMesh = tip.AddComponent<TextMesh>();
+            //    textMesh.text = "Node " + Index;
+            //    textMesh.anchor = TextAnchor.MiddleCenter;
+            //    textMesh.color = Color.green;
+            //    textMesh.fontSize = 10;
+            //    Tip = tip;
+            //    tip.transform.parent = Node;
+            //    tip.transform.ResetLocal();
+            //}
         }
     }
 
